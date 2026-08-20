@@ -19,7 +19,7 @@ module.exports = {
         {
             name: "enrollment-service",
             script: "java",
-            args: ["-jar", "enrollment-service/target/Enrollment-Service-1.0.0.jar"],
+            args: ["-jar", "enrollment-service/target/Enrollment-service-1.0.0.jar"],
             log_file: "./enrollment-service/logs/enrollment-service.log",
             instances: 2,
             exec_mode: "fork"
