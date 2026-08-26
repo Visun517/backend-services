@@ -1,6 +1,6 @@
-# 🏗️ Backend Microservices Platform
+# 🧠 Backend Services
 
-> **Core Infrastructure Super-Repository** for the Capstone Microservices Architecture — Service Discovery, Centralized Configuration, and API Gateway.
+> **Core Business Logic Super-Repository** for the Capstone Microservices Architecture — Student, Program, and Enrollment Management.
 
 ---
 
@@ -9,8 +9,8 @@
 | Field | Details |
 |---|---|
 | **Student Name** | Visun Prabodha |
-| **Student Number** | 241711009 |
-| **Slack Handle** | Visun Prabodha |
+| **Student Number** | [INSERT_YOUR_STUDENT_ID] |
+| **Slack Handle** | [INSERT_YOUR_SLACK_HANDLE] |
 | **GCP Project ID** | `visun-gcp-lab` |
 | **Submission Type** | Alternative Option (Capstone Project) |
 
@@ -18,49 +18,48 @@
 
 ## 📖 Project Description
 
-This repository is the **core infrastructure platform** of the Capstone microservices ecosystem. It is structured as a **super-repository** containing three independent Git submodules that together form the backbone of the distributed system: centralized configuration, service discovery, and API routing.
+This repository houses the **core business-logic microservices** of the Capstone platform. Structured as a **super-repository**, it contains three independently deployable Git submodules that manage the fundamental academic domain entities: students, programs, and enrollments.
 
-The platform is deployed on **Google Cloud Platform (GCP)** using **Compute Engine Managed Instance Groups (MIGs)** for horizontally scalable, self-healing infrastructure. Each service is process-managed using **PM2**, and all external traffic is routed through an **External Regional Application Load Balancer**, ensuring high availability and intelligent traffic distribution across the platform's instances.
+Each service registers itself with the Eureka `service-registry` (from the [Backend Microservices Platform](#) repo), fetches its configuration dynamically from the `config-server`, and runs on a **randomly assigned port (`server.port=0`)** to support horizontal scaling within a **GCP Compute Engine Managed Instance Group (MIG)**. Process lifecycle on each VM instance is handled by **PM2**.
 
 ### 🧩 Included Submodules
 
-| # | Submodule | Port | Responsibility |
-|---|---|---|---|
-| 1️⃣ | `config-server` | `9000` | Fetches centralized `.yaml` configuration files from the [Capstone Project Configurations](#) GitHub repository and serves them to all client microservices at runtime. |
-| 2️⃣ | `service-registry` | `9001` | Netflix Eureka Server — enables dynamic service discovery, health monitoring, and de-registration of microservice instances. |
-| 3️⃣ | `api-gateway` | `7000` | Spring Cloud Gateway — single entry point for all client requests. Handles CORS policy enforcement, caps file uploads at **20MB**, and performs dynamic, load-balanced routing via `lb://` using Spring Cloud LoadBalancer. |
+| # | Submodule | Port | Database | Responsibility |
+|---|---|---|---|---|
+| 1️⃣ | `student-service` | Random (`0`) | PostgreSQL | Manages student records. Integrates with **Google Cloud Storage (GCS)** to dynamically upload and retrieve student profile pictures. |
+| 2️⃣ | `program-service` | Random (`0`) | PostgreSQL | Manages academic program definitions and metadata. |
+| 3️⃣ | `enrollment-service` | Random (`0`) | MongoDB | Manages student-to-program enrollment records using a non-relational data model. |
 
 ---
 
 ## 🏛️ High-Level Architecture
 
 ```
-                                   ┌─────────────────────────────┐
-                                   │   External Regional          │
-                                   │   Application Load Balancer  │
-                                   └───────────────┬──────────────┘
-                                                    │
-                                                    ▼
-                                   ┌─────────────────────────────┐
-                                   │   api-gateway  (Port 7000)   │
-                                   │   • CORS Policy               │
-                                   │   • 20MB Upload Limit         │
-                                   │   • lb:// Routing              │
-                                   └───────────────┬──────────────┘
-                                                    │
-                        ┌───────────────────────────┼───────────────────────────┐
-                        ▼                            ▼                           ▼
-           ┌────────────────────────┐   ┌────────────────────────┐   ┌────────────────────────┐
-           │  service-registry       │   │  config-server          │   │  Downstream Business    │
-           │  (Eureka - Port 9001)   │◄──┤  (Port 9000)            │   │  Microservices          │
-           │  Service Discovery      │   │  Centralized Config     │   │  (see Backend Services) │
-           └────────────────────────┘   └────────────────────────┘   └────────────────────────┘
-                                                    │
-                                                    ▼
-                                   ┌─────────────────────────────┐
-                                   │  Capstone Project             │
-                                   │  Configurations (GitHub)      │
-                                   └─────────────────────────────┘
+                          ┌───────────────────────────────┐
+                          │        api-gateway              │
+                          │  (from Microservices Platform)  │
+                          └────────────────┬─────────────────┘
+                                            │  lb://
+             ┌──────────────────────────────┼──────────────────────────────┐
+             ▼                              ▼                              ▼
+ ┌────────────────────────┐   ┌────────────────────────┐   ┌────────────────────────┐
+ │   student-service        │   │   program-service        │   │   enrollment-service     │
+ │   (Random Port)          │   │   (Random Port)          │   │   (Random Port)          │
+ │                          │   │                          │   │                          │
+ │  ┌────────────────────┐ │   │  ┌────────────────────┐ │   │  ┌────────────────────┐ │
+ │  │ PostgreSQL           │ │   │  │ PostgreSQL           │ │   │  │ MongoDB              │ │
+ │  └────────────────────┘ │   │  └────────────────────┘ │   │  └────────────────────┘ │
+ │  ┌────────────────────┐ │   └────────────────────────┘   └────────────────────────┘
+ │  │ Google Cloud Storage │ │
+ │  │ (Profile Pictures)   │ │
+ │  └────────────────────┘ │
+ └────────────────────────┘
+             │
+             ▼
+ ┌────────────────────────┐
+ │  Eureka Service Registry │
+ │  + Config Server          │
+ └────────────────────────┘
 ```
 
 ---
@@ -68,11 +67,11 @@ The platform is deployed on **Google Cloud Platform (GCP)** using **Compute Engi
 ## 📁 Repository Structure
 
 ```
-backend-microservices-platform/
-├── config-server/          # Git Submodule — Port 9000
-├── service-registry/       # Git Submodule — Port 9001
-├── api-gateway/             # Git Submodule — Port 7000
-├── .gitmodules              # Submodule mapping definitions
+backend-services/
+├── student-service/         # Git Submodule — Random Port, PostgreSQL + GCS
+├── program-service/         # Git Submodule — Random Port, PostgreSQL
+├── enrollment-service/      # Git Submodule — Random Port, MongoDB
+├── .gitmodules               # Submodule mapping definitions
 └── README.md
 ```
 
@@ -85,14 +84,14 @@ backend-microservices-platform/
 | **Language** | Java 17 |
 | **Framework** | Spring Boot 3.3.2 |
 | **Microservices Framework** | Spring Cloud 2023.0.3 |
-| **Service Discovery** | Netflix Eureka |
-| **API Gateway** | Spring Cloud Gateway |
-| **Load Balancing (Client-Side)** | Spring Cloud LoadBalancer |
+| **Relational Persistence** | Spring Data JPA (PostgreSQL) |
+| **Non-Relational Persistence** | Spring Data MongoDB |
+| **Cloud Storage** | GCP Cloud Storage Spring Boot Starter |
 | **Build Tool** | Maven |
 | **Process Manager** | PM2 |
 | **Cloud Provider** | Google Cloud Platform (GCP) |
 | **Compute** | Compute Engine — Managed Instance Groups (MIGs) |
-| **Networking** | External Regional Application Load Balancer |
+| **Object Storage** | Google Cloud Storage (GCS Bucket) |
 | **Version Control** | Git (Submodule-based Super-Repo) |
 
 ---
@@ -104,61 +103,71 @@ backend-microservices-platform/
 - Java 17 (JDK)
 - Maven 3.9+
 - Git
-- Node.js & npm (for PM2, optional for local runs)
+- PostgreSQL instance (local or Cloud SQL)
+- MongoDB instance (local or Atlas / Cloud-hosted)
+- A GCP Service Account key with **Storage Object Admin** permissions (for `student-service`)
+- The `config-server` and `service-registry` from the **Backend Microservices Platform** repo running locally
 
 ### 1️⃣ Clone the Super-Repository with Submodules
 
 ```bash
-git clone --recurse-submodules https://github.com/<your-username>/backend-microservices-platform.git
-cd backend-microservices-platform
+git clone --recurse-submodules https://github.com/<your-username>/backend-services.git
+cd backend-services
 ```
 
-> If you already cloned without submodules, initialize them manually:
+> Already cloned without submodules? Run:
 > ```bash
 > git submodule update --init --recursive
 > ```
 
-### 2️⃣ Build Each Submodule
+### 2️⃣ Configure Local Environment Variables
+
+Each service pulls most configuration from the centralized `config-server`, but local overrides (e.g. DB credentials, GCS credentials) can be supplied via environment variables or a local `application-local.yaml`:
 
 ```bash
-cd config-server && mvn clean install && cd ..
-cd service-registry && mvn clean install && cd ..
-cd api-gateway && mvn clean install && cd ..
+export DB_URL=jdbc:postgresql://localhost:5432/capstone_db
+export DB_USERNAME=postgres
+export DB_PASSWORD=your_password
+export GCS_BUCKET_NAME=visun-gcp-lab-student-photos
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
+export MONGODB_URI=mongodb://localhost:27017/enrollment_db
 ```
 
-### 3️⃣ Run Services Locally (in order)
-
-> ⚠️ **Startup order matters** — `config-server` and `service-registry` must be up before `api-gateway`.
+### 3️⃣ Build Each Submodule
 
 ```bash
-# Terminal 1 — Config Server (Port 9000)
-cd config-server
+cd student-service && mvn clean install && cd ..
+cd program-service && mvn clean install && cd ..
+cd enrollment-service && mvn clean install && cd ..
+```
+
+### 4️⃣ Run Services Locally
+
+> ⚠️ Ensure `config-server` (9000) and `service-registry` (9001) from the Platform repo are already running.
+
+```bash
+# Terminal 1 — Student Service
+cd student-service
 mvn spring-boot:run
 
-# Terminal 2 — Service Registry / Eureka (Port 9001)
-cd service-registry
+# Terminal 2 — Program Service
+cd program-service
 mvn spring-boot:run
 
-# Terminal 3 — API Gateway (Port 7000)
-cd api-gateway
+# Terminal 3 — Enrollment Service
+cd enrollment-service
 mvn spring-boot:run
 ```
 
-### 4️⃣ Verify
-
-| Service | URL |
-|---|---|
-| Config Server | `http://localhost:9000/actuator/health` |
-| Eureka Dashboard | `http://localhost:9001` |
-| API Gateway | `http://localhost:7000/actuator/health` |
+Since each service uses a **random port**, check the console log or the Eureka dashboard (`http://localhost:9001`) to confirm the assigned port and registration status.
 
 ### ☁️ Production Deployment (GCP)
 
-Services are deployed on **Compute Engine MIGs** and managed by **PM2** for process resilience (auto-restart on crash, log management). Traffic reaches the `api-gateway` via a GCP **External Regional Application Load Balancer**, which distributes incoming requests across all healthy MIG instances.
+Services run on **Compute Engine MIGs**, managed by **PM2**, and scale horizontally behind the platform's API Gateway. `student-service` additionally requires the GCE instance's service account to have IAM permissions on the target **GCS bucket** for profile picture uploads/downloads.
 
 ```bash
 # Example PM2 startup on a GCE instance
-pm2 start "java -jar api-gateway.jar" --name api-gateway
+pm2 start "java -jar student-service.jar" --name student-service
 pm2 save
 ```
 
