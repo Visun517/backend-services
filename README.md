@@ -9,8 +9,8 @@
 | Field | Details |
 |---|---|
 | **Student Name** | Visun Prabodha |
-| **Student Number** | [INSERT_YOUR_STUDENT_ID] |
-| **Slack Handle** | [INSERT_YOUR_SLACK_HANDLE] |
+| **Student Number** | 241711009 |
+| **Slack Handle** | Visun Prabodha |
 | **GCP Project ID** | `visun-gcp-lab` |
 | **Submission Type** | Alternative Option (Capstone Project) |
 
